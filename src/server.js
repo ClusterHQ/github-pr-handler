@@ -2,7 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var rp = require('request-promise');
 
-var allowedActions = ['opened', 'reopened', 'synchronized'];
+var allowedActions = ['opened', 'reopened', 'synchronize'];
 
 module.exports = function(port, externalServer) {
     var app = express();

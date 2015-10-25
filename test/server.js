@@ -70,7 +70,7 @@ describe('server', function() {
         });
         it("sends a request", function() {
             expect(externalRequest).to.not.be.null;
-        })
+        });
         describe("the request", function() {
             xit('includes the branch name for the pull-request in the URL', function() {
 
@@ -82,6 +82,28 @@ describe('server', function() {
 
             });
         });
+    });
+
+    it('considers "opened" a valid action', function () {
+        request.body.action = "opened";
+        return rp(request)
+            .then(function(response) {
+                expect(response.statusCode).to.equal(200);
+            });
+    });
+    it('considers "reopened" a valid action', function () {
+        request.body.action = "reopened";
+        return rp(request)
+            .then(function(response) {
+                expect(response.statusCode).to.equal(200);
+            });
+    });
+    it('considers "synchronize" a valid action', function () {
+        request.body.action = "synchronize";
+        return rp(request)
+            .then(function(response) {
+                expect(response.statusCode).to.equal(200);
+            });
     });
     context('when the received request is for the wrong URL', function() {
         var response;
