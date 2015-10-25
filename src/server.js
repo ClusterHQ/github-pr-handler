@@ -5,7 +5,11 @@ module.exports = function(port, externalServer) {
     var app = express();
 
     app.post('/', function (req, res) {
-        rp(externalServer)
+        var request = {
+            uri: externalServer,
+            method: 'POST'
+        };
+        rp(request)
             .then(function() {
                 res.sendStatus(200);
             });
