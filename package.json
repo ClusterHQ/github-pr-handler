@@ -4,7 +4,7 @@
   "description": "Receive Github PRs and trigger the appropriate jobs on Jenkins",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "author": "ClusterHQ",
   "license": "ISC",
