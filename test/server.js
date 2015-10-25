@@ -51,7 +51,16 @@ describe('server', function() {
         externalRequest = null;
         response = null;
         body = {
-            action: 'opened'
+            action: 'opened',
+            repository: {
+                name: 'Repo',
+                owner: {
+                    login: 'Org'
+                }
+            },
+            head: {
+                ref: 'branch'
+            }
         };
         request = {
             method: 'POST',
@@ -84,8 +93,9 @@ describe('server', function() {
             expect(externalRequest).to.not.be.null;
         });
         describe("the request", function() {
-            xit('includes the branch name for the pull-request in the URL', function() {
-
+            it('includes the branch name for the pull-request in the URL', function() {
+                var url = externalServerURL + "/job/Org-Project/job/branch/job/triggerJobName/build"
+                expect(externalRequest.url).to.equal(url);
             });
             it('sends a POST request', function() {
                 expect(externalRequest.method).to.equal('POST');
