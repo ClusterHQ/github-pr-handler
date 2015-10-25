@@ -37,6 +37,10 @@ describe('server', function() {
             headers: {
                 'X-Github-Event' : 'pull_request'
             },
+            body: {
+                action: 'opened'
+            },
+            json: true,
             uri: serverURL,
             simple: false,
             resolveWithFullResponse: true
@@ -131,6 +135,22 @@ describe('server', function() {
         var response;
         beforeEach(function() {
             request.headers["X-Github-Event"] = 'issue_comment';
+            return rp(request)
+                .then(function(r) {
+                    response = r;
+                });
+        });
+        it('responds with a 404', function() {
+            expect(response.statusCode).to.equal(404);
+        });
+        it('does not send a request', function() {
+            expect(externalRequest).to.be.null;
+        });
+    });
+    context('when the received request is for the wrong action type', function() {
+        var response;
+        beforeEach(function() {
+            request.body.action = 'closed';
             return rp(request)
                 .then(function(r) {
                     response = r;
