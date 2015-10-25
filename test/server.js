@@ -146,8 +146,8 @@ describe('server', function() {
                     response = r;
                 });
         });
-        it('responds with a 404', function() {
-            expect(response.statusCode).to.equal(404);
+        it('responds with a 400', function() {
+            expect(response.statusCode).to.equal(400);
         });
         it('does not send a request', function() {
             expect(externalRequest).to.be.null;
@@ -162,8 +162,8 @@ describe('server', function() {
                     response = r;
                 });
         });
-        it('responds with a 404', function() {
-            expect(response.statusCode).to.equal(404);
+        it('responds with a 400', function() {
+            expect(response.statusCode).to.equal(400);
         });
         it('does not send a request', function() {
             expect(externalRequest).to.be.null;
@@ -178,16 +178,16 @@ describe('server', function() {
                     response = r;
                 });
         });
-        it('responds with a 404', function() {
-            expect(response.statusCode).to.equal(404);
+        it('responds with a 200', function() {
+            expect(response.statusCode).to.equal(200);
         });
         it('does not send a request', function() {
             expect(externalRequest).to.be.null;
         });
     });
     xcontext('when the received request does not have the correct secret', function() {
-        it('responds with a 404', function() {
-            expect(response.statusCode).to.equal(404);
+        it('responds with a 400', function() {
+            expect(response.statusCode).to.equal(400);
         });
         it('does not send a request', function() {
             expect(externalRequest).to.be.null;

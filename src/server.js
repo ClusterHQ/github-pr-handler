@@ -12,7 +12,11 @@ module.exports = function(port, externalServer) {
     app.post('/', function (req, res) {
         var isPullRequest = req.get('X-Github-Event') === 'pull_request';
         var isAllowedAction = allowedActions.indexOf(req.body.action) !== -1;
-        if (isPullRequest && isAllowedAction) {
+        if (!isPullRequest) {
+            res.status(400).send('Unexpected or missing event type');
+        } else if (!isAllowedAction) {
+            res.sendStatus(200);
+        } else {
             var request = {
                 uri: externalServer,
                 method: 'POST'
@@ -21,8 +25,6 @@ module.exports = function(port, externalServer) {
                 .then(function() {
                     res.sendStatus(200);
                 });
-        } else {
-            res.sendStatus(404);
         }
     });
 
