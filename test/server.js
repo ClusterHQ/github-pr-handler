@@ -127,7 +127,15 @@ describe('server', function() {
             expect(externalRequest).to.be.null;
         });
     });
-    xcontext('when the received request is for the wrong event type', function() {
+    context('when the received request is for the wrong event type', function() {
+        var response;
+        beforeEach(function() {
+            request.headers["X-Github-Event"] = 'issue_comment';
+            return rp(request)
+                .then(function(r) {
+                    response = r;
+                });
+        });
         it('responds with a 404', function() {
             expect(response.statusCode).to.equal(404);
         });
