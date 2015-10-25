@@ -5,7 +5,7 @@ module.exports = function(port, externalServer) {
     var app = express();
 
     app.post('/', function (req, res) {
-        if(req.get('X-Github-Event')) {
+        if(req.get('X-Github-Event') === 'pull_request') {
             var request = {
                 uri: externalServer,
                 method: 'POST'
