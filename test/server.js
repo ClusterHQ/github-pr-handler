@@ -23,7 +23,7 @@ describe('server', function() {
     var body, request, response;
 
     before(function() {
-        return new Promise(function(resolve, reject) {
+        return new Promise(function(resolve) {
             externalServer.listen(externalServerPort, resolve);
         })
     });
@@ -63,7 +63,7 @@ describe('server', function() {
             simple: false,
             resolveWithFullResponse: true
         };
-        return createrServer(port, externalServerURL)
+        return createrServer(port, externalServerURL, secret)
             .then(function(s) {
                 server = s;
             });
