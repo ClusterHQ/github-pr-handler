@@ -11,7 +11,11 @@ function calculateSignature(body, secret) {
     return hmac.digest('hex');
 }
 
-module.exports = function(port, externalServer, secret, triggerJobName) {
+function basicAuth(username, password) {
+    return "Basic " + (new Buffer(username + ":" + password).toString("base64"));
+}
+
+module.exports = function(port, externalServer, secret, triggerJobName, jenkinsUsername, jenkinsApiToken) {
     var app = express();
 
     app.use(bodyParser.text({
@@ -52,7 +56,10 @@ module.exports = function(port, externalServer, secret, triggerJobName) {
                     '/job/' + body.head.ref +
                     '/job/' + triggerJobName +
                     '/build',
-                method: 'POST'
+                method: 'POST',
+                headers: {
+                    Authorization: basicAuth(jenkinsUsername, jenkinsApiToken)
+                }
             };
             rp(request)
                 .then(function() {

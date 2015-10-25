@@ -75,7 +75,7 @@ describe('server', function() {
             simple: false,
             resolveWithFullResponse: true
         };
-        return createrServer(port, externalServerURL, secret, triggerJobName)
+        return createrServer(port, externalServerURL, secret, triggerJobName, 'user', 'api_token')
             .then(function(s) {
                 server = s;
             });
@@ -103,8 +103,8 @@ describe('server', function() {
             it('sends a POST request', function() {
                 expect(externalRequest.method).to.equal('POST');
             });
-            xit('includes the correct authentication header', function() {
-
+            it('includes the correct authentication header', function() {
+                expect(externalRequest.headers.authorization).to.equal('Basic dXNlcjphcGlfdG9rZW4=');
             });
             context('when the request fails', function() {
                 externalServerResponseCode = 500;
