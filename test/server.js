@@ -9,6 +9,7 @@ describe('server', function() {
     var server;
     var serverURL = 'http://localhost:' + port + '/';
     var secret = 'this-is-a-very-good-secret-indeed';
+    var triggerJobName = 'triggerJobName';
 
     var externalServer = http.Server();
     var externalServerPort = 8082;
@@ -72,7 +73,7 @@ describe('server', function() {
             simple: false,
             resolveWithFullResponse: true
         };
-        return createrServer(port, externalServerURL, secret)
+        return createrServer(port, externalServerURL, secret, triggerJobName)
             .then(function(s) {
                 server = s;
             });
@@ -94,7 +95,7 @@ describe('server', function() {
         });
         describe("the request", function() {
             it('includes the branch name for the pull-request in the URL', function() {
-                var url = externalServerURL + "/job/Org-Project/job/branch/job/triggerJobName/build"
+                var url = "/job/Org-Repo/job/branch/job/triggerJobName/build";
                 expect(externalRequest.url).to.equal(url);
             });
             it('sends a POST request', function() {

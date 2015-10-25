@@ -11,7 +11,7 @@ function calculateSignature(body, secret) {
     return hmac.digest('hex');
 }
 
-module.exports = function(port, externalServer, secret) {
+module.exports = function(port, externalServer, secret, triggerJobName) {
     var app = express();
 
     app.use(bodyParser.text({
@@ -47,7 +47,11 @@ module.exports = function(port, externalServer, secret) {
             }
 
             var request = {
-                uri: externalServer,
+                uri: externalServer +
+                    '/job/' + body.repository.owner.login + '-' + body.repository.name +
+                    '/job/' + body.head.ref +
+                    '/job/' + triggerJobName +
+                    '/build',
                 method: 'POST'
             };
             rp(request)
