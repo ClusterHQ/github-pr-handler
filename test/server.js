@@ -1,21 +1,43 @@
+var http = require('http');
 var rp = require('request-promise');
-var createrServer = require('../src/server');
 var expect = require('chai').expect;
+var createrServer = require('../src/server');
 
 describe('server', function() {
     var port = 8081;
     var server;
 
+    var externalServer = http.Server();
+    var externalServerPort = 8082;
+    var externalServerURL = 'http://localhost:' + externalServerPort;
+    var externalRequestMade = false;
+    externalServer.on('request', function(req, res) {
+        externalRequestMade = true;
+        res.statusCode = 200;
+        res.end();
+    });
+
+    before(function() {
+        return new Promise(function(resolve, reject) {
+            externalServer.listen(externalServerPort, resolve);
+        })
+    });
+
+    after(function() {
+       externalServer.close();
+    });
+
     beforeEach(function() {
-        return createrServer(port)
+        externalRequestMade = false;
+        return createrServer(port, externalServerURL)
             .then(function(s) {
                 server = s;
             });
     });
 
-    afterEach(function(end) {
+    afterEach(function(done) {
         server.close(function() {
-            end();
+            done();
         });
     });
 
@@ -40,6 +62,18 @@ describe('server', function() {
         return rp(options)
             .then(function(response) {
                expect(response.statusCode).to.equal(200);
+            });
+    });
+
+    it('makes a request to external server after receiving a POST request', function() {
+        var options = {
+            method: 'POST',
+            uri: 'http://localhost:' + port
+        };
+
+        return rp(options)
+            .then(function(response) {
+                expect(externalRequestMade).to.equal(true);
             });
     });
 });
