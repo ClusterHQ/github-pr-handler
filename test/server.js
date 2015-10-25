@@ -1,11 +1,25 @@
 var rp = require('request-promise');
-var server = require('../src/server');
+var createrServer = require('../src/server');
 var expect = require('chai').expect;
 
 describe('server', function() {
+    var port = 8081;
+    var server;
+
+    beforeEach(function() {
+        return createrServer(port)
+            .then(function(s) {
+                server = s;
+            });
+    });
+
+    afterEach(function(end) {
+        server.close(function() {
+            end();
+        });
+    });
+
     it('responds with 404', function() {
-        var port = 8081;
-        server(port);
         var options = {
             uri: 'http://localhost:' + port,
             simple: false,
@@ -18,8 +32,6 @@ describe('server', function() {
     });
 
     it('responds with 200 for POST requests', function() {
-        var port = 8081;
-        server(port);
         var options = {
             method: 'POST',
             uri: 'http://localhost:' + port,
