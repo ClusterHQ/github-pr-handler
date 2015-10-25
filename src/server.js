@@ -1,11 +1,18 @@
 var express = require('express');
+var bodyParser = require('body-parser');
 var rp = require('request-promise');
+
+var allowedActions = ['opened', 'reopened', 'synchronized'];
 
 module.exports = function(port, externalServer) {
     var app = express();
 
+    app.use(bodyParser.json());
+
     app.post('/', function (req, res) {
-        if(req.get('X-Github-Event') === 'pull_request') {
+        var isPullRequest = req.get('X-Github-Event') === 'pull_request';
+        var isAllowedAction = allowedActions.indexOf(req.body.action) !== -1;
+        if (isPullRequest && isAllowedAction) {
             var request = {
                 uri: externalServer,
                 method: 'POST'
