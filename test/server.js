@@ -14,10 +14,11 @@ describe('server', function() {
     var externalServer = http.Server();
     var externalServerPort = 8082;
     var externalServerURL = 'http://localhost:' + externalServerPort;
+    var externalServerResponseCode;
     var externalRequest;
     externalServer.on('request', function(req, res) {
         externalRequest = req;
-        res.statusCode = 200;
+        res.statusCode = externalServerResponseCode;
         res.end();
     });
 
@@ -49,6 +50,7 @@ describe('server', function() {
     }
 
     beforeEach(function() {
+        externalServerResponseCode = 200;
         externalRequest = null;
         response = null;
         body = {
@@ -104,7 +106,8 @@ describe('server', function() {
             xit('includes the correct authentication header', function() {
 
             });
-            xcontext('when the request fails', function() {
+            context('when the request fails', function() {
+                externalServerResponseCode = 500;
                 it('responds with a 500', function() {
 
                 });

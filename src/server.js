@@ -55,8 +55,11 @@ module.exports = function(port, externalServer, secret, triggerJobName) {
                 method: 'POST'
             };
             rp(request)
-                .then(function () {
+                .then(function() {
                     res.sendStatus(200);
+                })
+                .catch(function() {
+                    res.sendStatus(500);
                 });
         } catch (e) {
             console.log("Internal server error: " + e);
