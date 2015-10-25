@@ -2,11 +2,13 @@ var http = require('http');
 var rp = require('request-promise');
 var expect = require('chai').expect;
 var createrServer = require('../src/server');
+var crypto = require('crypto');
 
 describe('server', function() {
     var port = 8081;
     var server;
     var serverURL = 'http://localhost:' + port + '/';
+    var secret = 'this-is-a-very-good-secret-indeed';
 
     var externalServer = http.Server();
     var externalServerPort = 8082;
@@ -18,7 +20,7 @@ describe('server', function() {
         res.end();
     });
 
-    var request;
+    var body, request, response;
 
     before(function() {
         return new Promise(function(resolve, reject) {
@@ -30,15 +32,31 @@ describe('server', function() {
        externalServer.close();
     });
 
+    function hmacBody(body, secret) {
+        var hmac = crypto.createHmac('sha1', secret);
+        hmac.update(JSON.stringify(body));
+        return hmac.digest('hex');
+    }
+
+    function doRequest() {
+        request.headers['X-Hub-Signature'] = 'sha1=' + hmacBody(body, secret);
+        request.body = body;
+        return rp(request)
+            .then(function(r) {
+                response = r;
+            });
+    }
+
     beforeEach(function() {
         externalRequest = null;
+        response = null;
+        body = {
+            action: 'opened'
+        };
         request = {
             method: 'POST',
             headers: {
-                'X-Github-Event' : 'pull_request'
-            },
-            body: {
-                action: 'opened'
+                'X-Github-Event': 'pull_request'
             },
             json: true,
             uri: serverURL,
@@ -58,13 +76,7 @@ describe('server', function() {
     });
 
     context('when a valid request is received', function() {
-        var response;
-        beforeEach(function() {
-            return rp(request)
-                .then(function(r) {
-                    response = r;
-                });
-        });
+        beforeEach(doRequest);
         it("responds with a 200", function() {
             expect(response.statusCode).to.equal(200);
         });
@@ -81,38 +93,39 @@ describe('server', function() {
             xit('includes the correct authentication header', function() {
 
             });
+            xcontext('when the request fails', function() {
+                it('responds with a 500', function() {
+
+                });
+            })
         });
     });
 
     it('considers "opened" a valid action', function () {
-        request.body.action = "opened";
-        return rp(request)
-            .then(function(response) {
+        body.action = "opened";
+        return doRequest()
+            .then(function() {
                 expect(response.statusCode).to.equal(200);
             });
     });
     it('considers "reopened" a valid action', function () {
-        request.body.action = "reopened";
-        return rp(request)
-            .then(function(response) {
+        body.action = "reopened";
+        return doRequest()
+            .then(function() {
                 expect(response.statusCode).to.equal(200);
             });
     });
     it('considers "synchronize" a valid action', function () {
-        request.body.action = "synchronize";
-        return rp(request)
-            .then(function(response) {
+        body.action = "synchronize";
+        return doRequest()
+            .then(function() {
                 expect(response.statusCode).to.equal(200);
             });
     });
     context('when the received request is for the wrong URL', function() {
-        var response;
         beforeEach(function() {
             request.uri = serverURL + 'something-completely-different';
-            return rp(request)
-                .then(function(r) {
-                    response = r;
-                });
+            return doRequest();
         });
         it('responds with a 404', function() {
             expect(response.statusCode).to.equal(404);
@@ -122,13 +135,9 @@ describe('server', function() {
         });
     });
     context('when the received request is not a POST request', function() {
-        var response;
         beforeEach(function() {
             request.method = 'GET';
-            return rp(request)
-                .then(function(r) {
-                    response = r;
-                });
+            return doRequest();
         });
         it('responds with a 404', function() {
             expect(response.statusCode).to.equal(404);
@@ -138,13 +147,9 @@ describe('server', function() {
         });
     });
     context('when the received request does not contain a X-Github-Event header', function() {
-        var response;
         beforeEach(function() {
             delete request.headers["X-Github-Event"];
-            return rp(request)
-                .then(function(r) {
-                    response = r;
-                });
+            return doRequest();
         });
         it('responds with a 400', function() {
             expect(response.statusCode).to.equal(400);
@@ -154,13 +159,9 @@ describe('server', function() {
         });
     });
     context('when the received request is for the wrong event type', function() {
-        var response;
         beforeEach(function() {
             request.headers["X-Github-Event"] = 'issue_comment';
-            return rp(request)
-                .then(function(r) {
-                    response = r;
-                });
+            return doRequest();
         });
         it('responds with a 400', function() {
             expect(response.statusCode).to.equal(400);
@@ -170,13 +171,9 @@ describe('server', function() {
         });
     });
     context('when the received request is for the wrong action type', function() {
-        var response;
         beforeEach(function() {
-            request.body.action = 'closed';
-            return rp(request)
-                .then(function(r) {
-                    response = r;
-                });
+            body.action = 'closed';
+            return doRequest();
         });
         it('responds with a 200', function() {
             expect(response.statusCode).to.equal(200);
@@ -185,7 +182,15 @@ describe('server', function() {
             expect(externalRequest).to.be.null;
         });
     });
-    xcontext('when the received request does not have the correct secret', function() {
+    context('when the received request does not a valid signature', function() {
+        beforeEach(function() {
+            request.headers['X-Hub-Signature'] = 'sha1=3ace7701c65b02e3a19dfadf977e2559f5a04397';
+            request.body = body;
+            return rp(request)
+                .then(function(r) {
+                    response = r;
+                });
+        });
         it('responds with a 400', function() {
             expect(response.statusCode).to.equal(400);
         });
