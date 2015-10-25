@@ -6,16 +6,19 @@ var createrServer = require('../src/server');
 describe('server', function() {
     var port = 8081;
     var server;
+    var serverURL = 'http://localhost:' + port + '/';
 
     var externalServer = http.Server();
     var externalServerPort = 8082;
     var externalServerURL = 'http://localhost:' + externalServerPort;
-    var externalRequestMade = false;
+    var externalRequest;
     externalServer.on('request', function(req, res) {
-        externalRequestMade = true;
+        externalRequest = req;
         res.statusCode = 200;
         res.end();
     });
+
+    var request;
 
     before(function() {
         return new Promise(function(resolve, reject) {
@@ -28,7 +31,16 @@ describe('server', function() {
     });
 
     beforeEach(function() {
-        externalRequestMade = false;
+        externalRequest = null;
+        request = {
+            method: 'POST',
+            headers: {
+                'X-Github-Event' : 'pull_request'
+            },
+            uri: serverURL,
+            simple: false,
+            resolveWithFullResponse: true
+        };
         return createrServer(port, externalServerURL)
             .then(function(s) {
                 server = s;
@@ -41,39 +53,94 @@ describe('server', function() {
         });
     });
 
-    it('responds with 404', function() {
-        var options = {
-            uri: 'http://localhost:' + port,
-            simple: false,
-            resolveWithFullResponse: true
-        };
-        return rp(options)
-            .then(function(response) {
-                expect(response.statusCode).to.equal(404);
+    context('when a valid request is received', function() {
+        var response;
+        beforeEach(function() {
+            return rp(request)
+                .then(function(r) {
+                    response = r;
+                });
+        });
+        it("responds with a 200", function() {
+            expect(response.statusCode).to.equal(200);
+        });
+        it("sends a request", function() {
+            expect(externalRequest).to.not.be.null;
+        })
+        describe("the request", function() {
+            xit('includes the branch name for the pull-request in the URL', function() {
+
             });
+            it('sends a POST request', function() {
+                expect(externalRequest.method).to.equal('POST');
+            });
+            xit('includes the correct authentication header', function() {
+
+            });
+        });
     });
-
-    it('responds with 200 for POST requests', function() {
-        var options = {
-            method: 'POST',
-            uri: 'http://localhost:' + port,
-            resolveWithFullResponse: true
-        };
-        return rp(options)
-            .then(function(response) {
-               expect(response.statusCode).to.equal(200);
-            });
+    context('when the received request is for the wrong URL', function() {
+        var response;
+        beforeEach(function() {
+            request.uri = serverURL + 'something-completely-different';
+            return rp(request)
+                .then(function(r) {
+                    response = r;
+                });
+        });
+        it('responds with a 404', function() {
+            expect(response.statusCode).to.equal(404);
+        });
+        it('does not send a request', function() {
+            expect(externalRequest).to.be.null;
+        });
     });
-
-    it('makes a request to external server after receiving a POST request', function() {
-        var options = {
-            method: 'POST',
-            uri: 'http://localhost:' + port
-        };
-
-        return rp(options)
-            .then(function(response) {
-                expect(externalRequestMade).to.equal(true);
-            });
+    context('when the received request is not a POST request', function() {
+        var response;
+        beforeEach(function() {
+            request.method = 'GET';
+            return rp(request)
+                .then(function(r) {
+                    response = r;
+                });
+        });
+        it('responds with a 404', function() {
+            expect(response.statusCode).to.equal(404);
+        });
+        it('does not send a request', function() {
+            expect(externalRequest).to.be.null;
+        });
+    });
+    context('when the received request does not contain a X-Github-Event header', function() {
+        var response;
+        beforeEach(function() {
+            delete request.headers["X-Github-Event"];
+            return rp(request)
+                .then(function(r) {
+                    response = r;
+                });
+        });
+        it('responds with a 404', function() {
+            expect(response.statusCode).to.equal(404);
+        });
+        it('does not send a request', function() {
+            expect(externalRequest).to.be.null;
+        });
+    });
+    xcontext('when the received request is for the wrong event type', function() {
+        it('responds with a 404', function() {
+            expect(response.statusCode).to.equal(404);
+        });
+        it('does not send a request', function() {
+            expect(externalRequest).to.be.null;
+        });
+    });
+    xcontext('when the received request does not have the correct secret', function() {
+        it('responds with a 404', function() {
+            expect(response.statusCode).to.equal(404);
+        });
+        it('does not send a request', function() {
+            expect(externalRequest).to.be.null;
+        });
     });
 });
