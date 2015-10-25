@@ -16,4 +16,18 @@ describe('server', function() {
                 expect(response.statusCode).to.equal(404);
             });
     });
+
+    it('responds with 200 for POST requests', function() {
+        var port = 8081;
+        server(port);
+        var options = {
+            method: 'POST',
+            uri: 'http://localhost:' + port,
+            resolveWithFullResponse: true
+        };
+        return rp(options)
+            .then(function(response) {
+               expect(response.statusCode).to.equal(200);
+            });
+    });
 });
