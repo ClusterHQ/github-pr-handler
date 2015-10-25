@@ -5,14 +5,18 @@ module.exports = function(port, externalServer) {
     var app = express();
 
     app.post('/', function (req, res) {
-        var request = {
-            uri: externalServer,
-            method: 'POST'
-        };
-        rp(request)
-            .then(function() {
-                res.sendStatus(200);
-            });
+        if(req.get('X-Github-Event')) {
+            var request = {
+                uri: externalServer,
+                method: 'POST'
+            };
+            rp(request)
+                .then(function() {
+                    res.sendStatus(200);
+                });
+        } else {
+            res.sendStatus(404);
+        }
     });
 
     return new Promise(function(resolve, reject) {
