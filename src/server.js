@@ -67,7 +67,7 @@ module.exports = function(port, externalServer, secret, triggerJobName, jenkinsU
                     res.sendStatus(200);
                 })
                 .catch(function() {
-                    console.log("Could not send POST request to Jenkins");
+                    console.log("Could not send POST request to Jenkins URL: " + request.uri);
                     res.sendStatus(500);
                 });
         } catch (e) {
