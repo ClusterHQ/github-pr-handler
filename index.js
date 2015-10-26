@@ -1,8 +1,19 @@
 var server = require('./src/server');
+var commandLineArgs = require("command-line-args");
 
-var port = process.argv[2];
-var jenkinsServer = process.argv[3];
-var jenkinsJob = process.argv[4];
+var cli = commandLineArgs([
+    { name: "port", alias: "p", type: Number, description: "Port to run the server on" },
+    { name: "url", alias: "u", type: String, description: "The URL of the Jenkins server to trigger jobs on" },
+    { name: "job", alias: "j", type: String, defaultValue: "__main_multijob",  description: "The name of the Jenkins job to trigger" }
+]);
+
+var options = cli.parse();
+
+if (Object.keys(options).length < 3) {
+    console.log("Incorrect number of arguments specified");
+    console.log(cli.getUsage());
+    process.exit(1);
+}
 
 var githubSecret = process.env.GITHUB_SECRET;
 if (githubSecret === undefined) {
@@ -22,7 +33,7 @@ if (jenkinsApiToken === undefined) {
     process.exit(1);
 }
 
-server(port, jenkinsServer, githubSecret, jenkinsJob, jenkinsUsername, jenkinsApiToken)
+server(options.port, options.url, githubSecret, options.job, jenkinsUsername, jenkinsApiToken)
     .then(function (s) {
         console.log('Github PR handler listening at %s:%s', s.address().address, s.address().port);
     });
