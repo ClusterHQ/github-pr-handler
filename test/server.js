@@ -61,8 +61,10 @@ describe('server', function() {
                     login: 'Org'
                 }
             },
-            head: {
-                ref: 'branch'
+            pull_request: {
+                head: {
+                    ref: 'branch'
+                }
             }
         };
         request = {

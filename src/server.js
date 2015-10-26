@@ -53,7 +53,7 @@ module.exports = function(port, externalServer, secret, triggerJobName, jenkinsU
             var request = {
                 uri: externalServer +
                     '/job/' + body.repository.owner.login + '-' + body.repository.name +
-                    '/job/' + body.head.ref +
+                    '/job/' + body.pull_request.head.ref +
                     '/job/' + triggerJobName +
                     '/build',
                 method: 'POST',
