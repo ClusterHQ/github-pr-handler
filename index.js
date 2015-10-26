@@ -33,6 +33,7 @@ if (jenkinsApiToken === undefined) {
     process.exit(1);
 }
 
+// Start the Github PR handler with the provided options.
 server(options.port, options.url, githubSecret, options.job, jenkinsUsername, jenkinsApiToken)
     .then(function (s) {
         console.log('Github PR handler listening at %s:%s', s.address().address, s.address().port);
