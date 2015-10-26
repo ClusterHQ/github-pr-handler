@@ -46,7 +46,7 @@ module.exports = function(port, externalServer, secret, triggerJobName, jenkinsU
 
             var isAllowedAction = allowedActions.indexOf(body.action) !== -1;
             if (!isAllowedAction) {
-                res.sendStatus(200);
+                res.status(200).send('Ignoring action: ' + body.action);
                 return;
             }
 
@@ -63,9 +63,11 @@ module.exports = function(port, externalServer, secret, triggerJobName, jenkinsU
             };
             rp(request)
                 .then(function() {
+                    console.log('Sent POST request to Jenkins');
                     res.sendStatus(200);
                 })
                 .catch(function() {
+                    console.log("Could not send POST request to Jenkins");
                     res.sendStatus(500);
                 });
         } catch (e) {
