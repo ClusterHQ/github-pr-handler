@@ -2,6 +2,7 @@ var server = require('./src/server');
 
 var port = process.argv[2];
 var jenkinsServer = process.argv[3];
+var jenkinsJob = process.argv[4];
 
 var githubSecret = process.env.GITHUB_SECRET;
 if (githubSecret === undefined) {
@@ -21,7 +22,7 @@ if (jenkinsApiToken === undefined) {
     process.exit(1);
 }
 
-server(port, jenkinsServer, githubSecret, jenkinsUsername, jenkinsApiToken)
+server(port, jenkinsServer, githubSecret, jenkinsJob, jenkinsUsername, jenkinsApiToken)
     .then(function (s) {
         console.log('Github PR handler listening at %s:%s', s.address().address, s.address().port);
     });
