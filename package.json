@@ -1,5 +1,5 @@
 {
-  "name": "github_pr_webhook",
+  "name": "github_pr_handler",
   "version": "0.0.1",
   "description": "Receive Github PRs and trigger the appropriate jobs on Jenkins",
   "main": "index.js",
@@ -7,7 +7,6 @@
     "test": "mocha"
   },
   "author": "ClusterHQ",
-  "license": "ISC",
   "devDependencies": {
     "chai": "^3.4.0",
     "mocha": "^2.3.3"
