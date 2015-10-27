@@ -1,7 +1,8 @@
 import os
 
 from fabric.api import task, env
-from bookshelf.api_v1 import (create_server,
+from bookshelf.api_v1 import (apt_install,
+                              create_server,
                               down as f_down,
                               ec2,
                               is_there_state,
@@ -20,6 +21,7 @@ class MyCookbooks():
         ]
 
     def start_github_handler_instance(self):
+        apt_install(packages=self.required_packages())
         pass
         # install git
         # clone package
@@ -117,12 +119,12 @@ def up():
                       tags=cloud_config['tags'])
 
 @task
-def it(distribution):
+def it():
     up()
-    bootstrap(distribution)
+    bootstrap()
 
 @task
-def bootstrap(distribution):
+def bootstrap():
     cookbook = MyCookbooks()
 
     cookbook.start_github_handler_instance()
@@ -136,3 +138,8 @@ env.use_ssh_config = False
 env.eagerly_disconnect = True
 env.connection_attemtps = 5
 env.user = 'root'
+
+if is_there_state():
+    data = load_state_from_disk()
+    env.hosts = data['ip_address']
+    env.cloud = data['cloud_type']
