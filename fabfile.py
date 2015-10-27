@@ -1,13 +1,22 @@
 import os
 
-from fabric.api import task, env
+from fabric.api import sudo, task, env
+from fabric.context_managers import cd, settings, hide
 from bookshelf.api_v1 import (apt_install,
+                              create_docker_group,
                               create_server,
                               down as f_down,
                               ec2,
+                              git_clone,
+                              install_docker,
                               is_there_state,
                               load_state_from_disk,
+                              log_green,
                               up as f_up)
+
+from cuisine import (user_ensure,
+                     group_ensure,
+                     group_user_ensure)
 
 
 class MyCookbooks():
@@ -20,12 +29,43 @@ class MyCookbooks():
             "git"
         ]
 
+    def add_user_to_docker_group(self):
+        """ make sure the ubuntu user is part of the docker group """
+        log_green('adding the ubuntu user to the docker group')
+        data = load_state_from_disk()
+        with settings(hide('warnings', 'running', 'stdout', 'stderr'),
+                      warn_only=True, capture=True):
+            user_ensure('ubuntu', home='/home/ubuntu', shell='/bin/bash')
+            group_ensure('docker', gid=55)
+            group_user_ensure('docker', 'ubuntu')
+
+    def build_docker_image(self, image_name):
+        sudo('docker build -t ' + image_name + ' .')
+
     def start_github_handler_instance(self):
         apt_install(packages=self.required_packages())
-        pass
-        # install git
-        # clone package
-        # install docker
+        create_docker_group()
+        self.add_user_to_docker_group()
+        install_docker()
+        git_clone('https://github.com/ClusterHQ/github-pr-handler',
+                  'github-pr-handler')
+        with cd('github-pr-handler'):
+            self.build_docker_image('github_pr_handler')
+            jenkins_username = 'admin'
+            jenkins_api_token = 'token'
+            jenkins_server = 'http://example.com'
+            github_secret = 'qwerty'
+            port = '8080'
+            cmd = ('docker run -p {0}:{0} '
+                   '-e GITHUB_SECRET={1} '
+                   '-e JENKINS_USERNAME={2} '
+                   '-e JENKINS_API_TOKEN={3} '
+                   'github_pr_handler '
+                   '-p {0} '
+                   '-u {4}').format(port, github_secret, jenkins_username, jenkins_api_token, jenkins_server)
+            sudo(cmd)
+            # build docker image
+            # and start
         # start docker container with relevant parameters
 
 cloud_config = {
