@@ -29,7 +29,18 @@ function calculateBasicAuthValue(username, password) {
     return "Basic " + (new Buffer(username + ":" + password).toString("base64"));
 }
 
-module.exports = function(port, externalServer, secret, triggerJobName, jenkinsUsername, jenkinsApiToken) {
+/**
+ * Start the Github PR handler server.
+ * @function
+ * @param {number} port - The port that should be used to listen for connections.
+ * @param {string} jenkinsServer - The URL of the Jenkins server to trigger jobs on.
+ * @param {string} secret - The secret used by Github to sign requests.
+ * @param {string} triggerJobName - The name of the job to trigger on Jenkins.
+ * @param {string} jenkinsUsername - The Jenkins username to authenticate with.
+ * @param {string} jenkinsApiToken - The Jenkins API token to authenticate with.
+ * @returns {Promise} A Promise that is resolved once the server is started and listening on the given port.
+ */
+module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUsername, jenkinsApiToken) {
     var app = express();
 
     app.use(bodyParser.text({
@@ -75,7 +86,7 @@ module.exports = function(port, externalServer, secret, triggerJobName, jenkinsU
             // Extract the necessary data from the request body and construct the correct
             // Jenkins job URL to post a build request to.
             var request = {
-                uri: externalServer +
+                uri: jenkinsServer +
                     '/job/' + body.repository.owner.login + '-' + body.repository.name +
                     '/job/' + body.pull_request.head.ref +
                     '/job/' + triggerJobName +
