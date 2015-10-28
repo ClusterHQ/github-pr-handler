@@ -86,7 +86,7 @@ cloud_config = {
     'region': os.getenv('AWS_REGION', 'us-west-2'),
     'secret_access_key': os.environ['AWS_SECRET_ACCESS_KEY'],
     'access_key_id': os.environ['AWS_ACCESS_KEY_ID'],
-    'security_groups': ['ssh'],
+    'security_groups': ['ssh', 'github_pr_handler'],
     'instance_name': 'github_pr_handler',
     'description': 'Receive requests from Github and triggers jobs on Jenkins',
     'key_filename': os.environ['AWS_KEY_FILENAME'],
