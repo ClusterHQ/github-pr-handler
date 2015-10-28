@@ -1,4 +1,5 @@
 import os
+import yaml
 
 from fabric.api import sudo, task, env
 from fabric.context_managers import cd, settings, hide
@@ -42,31 +43,38 @@ class MyCookbooks():
     def build_docker_image(self, image_name):
         sudo('docker build -t ' + image_name + ' .')
 
+    def secrets(self):
+        return yaml.load(open('segredos/ci-platform/all/all.yaml', 'r'))
+
     def start_github_handler_instance(self):
         apt_install(packages=self.required_packages())
         create_docker_group()
         self.add_user_to_docker_group()
         install_docker()
+        repo = 'github-pr-handler'
         git_clone('https://github.com/ClusterHQ/github-pr-handler',
-                  'github-pr-handler')
-        with cd('github-pr-handler'):
-            self.build_docker_image('github_pr_handler')
-            jenkins_username = 'admin'
-            jenkins_api_token = 'token'
-            jenkins_server = 'http://example.com'
-            github_secret = 'qwerty'
-            port = '8080'
-            cmd = ('docker run -p {0}:{0} '
-                   '-e GITHUB_SECRET={1} '
-                   '-e JENKINS_USERNAME={2} '
-                   '-e JENKINS_API_TOKEN={3} '
-                   'github_pr_handler '
-                   '-p {0} '
-                   '-u {4}').format(port, github_secret, jenkins_username, jenkins_api_token, jenkins_server)
+                  repo)
+
+        with cd(repo):
+            self.build_docker_image(repo)
+            secrets = self.secrets()['env']['default']['github_pr']
+            cmd = ('docker run '
+                   '-p {port}:{port} '
+                   '-e GITHUB_SECRET={github_secret} '
+                   '-e JENKINS_USERNAME={jenkins_username} '
+                   '-e JENKINS_API_TOKEN={jenkins_api_token} '
+                   '{image} '
+                   '-p {port} '
+                   '-u {jenkins_server}'
+                  ).format(
+                      port=secrets['port'],
+                      image=repo,
+                      github_secret=secrets['github_secret'],
+                      jenkins_username=secrets['username'],
+                      jenkins_api_token=secrets['api_token'],
+                      jenkins_server=secrets['jenkins_url']
+                  )
             sudo(cmd)
-            # build docker image
-            # and start
-        # start docker container with relevant parameters
 
 cloud_config = {
     'ami': 'ami-87bea5b7',
