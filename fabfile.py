@@ -57,7 +57,7 @@ class MyCookbooks():
 
         with cd(repo):
             self.build_docker_image(repo)
-            secrets = self.secrets()['env']['default']['github_pr']
+            secrets = self.secrets()['env']['default']['github_pr_handler']
             cmd = ('docker run '
                    '-p {port}:{port} '
                    '-e GITHUB_SECRET={github_secret} '
