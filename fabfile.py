@@ -44,8 +44,19 @@ class MyCookbooks():
             group_ensure('docker', gid=55)
             group_user_ensure('docker', 'ubuntu')
 
-    def build_docker_image(self, image_name):
-        sudo('docker build -t ' + image_name + ' .')
+    def build_docker_image(self, dockerfile, image_name):
+        """
+        Build a Dockerfile with a given tag.
+
+        :param dockerfile: The path of the Dockerfile to build.
+        :param image_name: The name to give to the created image.
+        """
+
+        cmd = ('docker build -t {image_name} {dockerfile}').format(
+            image_name=image_name,
+            dockerfile=dockerfile
+        )
+        sudo(cmd)
 
     def secrets(self):
         """
@@ -66,7 +77,7 @@ class MyCookbooks():
                   repo)
 
         with cd(repo):
-            self.build_docker_image(repo)
+            self.build_docker_image(os.path.curdir, repo)
             secrets = self.secrets()['env']['default']['github_pr_handler']
             cmd = ('docker run '
                    '-p {port}:{port} '
