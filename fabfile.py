@@ -76,12 +76,13 @@ class MyCookbooks():
                   )
             sudo(cmd)
 
+
 cloud_config = {
     'ami': 'ami-87bea5b7',
     'username': 'ubuntu',
     'disk_name': '/dev/sda1',
     'disk_size': '40',
-    'instance_type': os.getenv('AWS_INSTANCE_TYPE', 't2.medium'),
+    'instance_type': os.getenv('AWS_INSTANCE_TYPE', 't2.micro'),
     'key_pair': os.environ['AWS_KEY_PAIR'],
     'region': os.getenv('AWS_REGION', 'us-west-2'),
     'secret_access_key': os.environ['AWS_SECRET_ACCESS_KEY'],
