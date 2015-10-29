@@ -20,7 +20,7 @@ from cuisine import (user_ensure,
                      group_user_ensure)
 
 
-class MyCookbooks():
+class GithubPRHandlerCookbook():
     """
     Collection of helper functions for fabric tasks that are
     used for managing the Github PR Handler service.
@@ -233,7 +233,7 @@ def it():
 
 @task
 def bootstrap():
-    cookbook = MyCookbooks()
+    cookbook = GithubPRHandlerCookbook()
 
     cookbook.install_packages()
     cookbook.start_github_handler_instance()
