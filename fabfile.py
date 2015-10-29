@@ -22,7 +22,8 @@ from cuisine import (user_ensure,
 
 class MyCookbooks():
     """
-    Collection of helper functions for fabric tasks.
+    Collection of helper functions for fabric tasks that are
+    used for managing the Github PR Handler service.
     """
 
     def required_packages(self):
@@ -31,7 +32,10 @@ class MyCookbooks():
         ]
 
     def add_user_to_docker_group(self):
-        """ make sure the ubuntu user is part of the docker group """
+        """
+        Make sure the ubuntu user is part of the docker group.
+        """
+
         log_green('adding the ubuntu user to the docker group')
         data = load_state_from_disk()
         with settings(hide('warnings', 'running', 'stdout', 'stderr'),
@@ -44,6 +48,12 @@ class MyCookbooks():
         sudo('docker build -t ' + image_name + ' .')
 
     def secrets(self):
+        """
+        Load the secrets file.
+
+        :return dict: The secrets contained within the file.
+        """
+
         return yaml.load(open('segredos/ci-platform/all/all.yaml', 'r'))
 
     def start_github_handler_instance(self):
@@ -121,7 +131,10 @@ def help():
 
 @task
 def down():
-    """ halt an existing instance """
+    """
+    Halt an existing instance.
+    """
+
     data = load_state_from_disk()
     region = data['region']
     cloud_type = data['cloud_type']
@@ -140,7 +153,8 @@ def down():
 
 @task
 def up():
-    """ boots a new instance on amazon or rackspace
+    """
+    Boots a new Ubuntu instance on AWS, or start the existing instance.
     """
 
     if is_there_state():
