@@ -26,11 +26,6 @@ class MyCookbooks():
     used for managing the Github PR Handler service.
     """
 
-    def required_packages(self):
-        return [
-            "git"
-        ]
-
     def add_user_to_docker_group(self):
         """
         Make sure the ubuntu user is part of the docker group.
@@ -58,6 +53,26 @@ class MyCookbooks():
         )
         sudo(cmd)
 
+    def install_docker(self):
+        create_docker_group()
+        self.add_user_to_docker_group()
+        install_docker()
+
+    def install_packages(self):
+        """
+        Install required packages.
+        """
+
+        apt_install(packages=self.required_packages())
+        self.install_docker()
+
+    def required_packages(self):
+        """
+        :return list: The required packages for this instance.
+        """
+
+        return [ "git" ]
+
     def secrets(self):
         """
         Load the secrets file.
@@ -68,10 +83,10 @@ class MyCookbooks():
         return yaml.load(open('segredos/ci-platform/all/all.yaml', 'r'))
 
     def start_github_handler_instance(self):
-        apt_install(packages=self.required_packages())
-        create_docker_group()
-        self.add_user_to_docker_group()
-        install_docker()
+        """
+        Start the Github PR Handler service.
+        """
+
         repo = 'github-pr-handler'
         git_clone('https://github.com/ClusterHQ/github-pr-handler',
                   repo)
@@ -220,6 +235,7 @@ def it():
 def bootstrap():
     cookbook = MyCookbooks()
 
+    cookbook.install_packages()
     cookbook.start_github_handler_instance()
 
 
