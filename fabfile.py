@@ -96,9 +96,28 @@ cloud_config = {
 
 @task(default=True)
 def help():
-    print("""
-          This will start the Github PR handler somewhere..
-          """)
+    """
+    Print the help text.
+    """
+
+    help_text = (
+    """
+    Start an AWS instance that is running the Github PR handler
+
+    usage: fab <action>
+
+    # Start the service
+    $ fab it
+
+    # Provision and start the AWS instance if it does not exist,
+    # otherwise start an existing instance.
+    $ fab up
+
+    # Suspend the instance.
+    $ fab down
+    """
+    )
+    print help_text
 
 @task
 def down():
