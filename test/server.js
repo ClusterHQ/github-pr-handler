@@ -15,9 +15,9 @@ describe('server', function() {
     var externalServerPort = 8082;
     var externalServerURL = 'http://localhost:' + externalServerPort;
     var externalServerResponseCode;
-    var externalRequest;
+    var externalRequests = [];
     externalServer.on('request', function(req, res) {
-        externalRequest = req;
+        externalRequests.push(req);
         res.statusCode = externalServerResponseCode;
         res.end();
     });
@@ -51,7 +51,7 @@ describe('server', function() {
 
     beforeEach(function() {
         externalServerResponseCode = 200;
-        externalRequest = null;
+        externalRequests = [];
         response = null;
         body = {
             action: 'opened',
@@ -95,18 +95,19 @@ describe('server', function() {
             expect(response.statusCode).to.equal(200);
         });
         it("sends a request", function() {
-            expect(externalRequest).to.not.be.null;
+            expect(externalRequests).to.have.length(1);
         });
         describe("the request", function() {
             it('includes the branch name for the pull-request in the URL', function() {
                 var url = "/job/Org-Repo/job/branch/job/triggerJobName/build";
-                expect(externalRequest.url).to.equal(url);
+                expect(externalRequests).to.have.deep.property('[0].url', url);
             });
             it('sends a POST request', function() {
-                expect(externalRequest.method).to.equal('POST');
+                expect(externalRequests).to.have.deep.property('[0].method', 'POST');
             });
             it('includes the correct authentication header', function() {
-                expect(externalRequest.headers.authorization).to.equal('Basic dXNlcjphcGlfdG9rZW4=');
+                expect(externalRequests).to.have.deep
+                    .property('[0].headers.authorization', 'Basic dXNlcjphcGlfdG9rZW4=');
             });
             context('when the request fails', function() {
                 it('responds with a 500', function() {
@@ -150,7 +151,7 @@ describe('server', function() {
             expect(response.statusCode).to.equal(404);
         });
         it('does not send a request', function() {
-            expect(externalRequest).to.be.null;
+            expect(externalRequests).to.be.empty;
         });
     });
     context('when the received request is not a POST request', function() {
@@ -162,7 +163,7 @@ describe('server', function() {
             expect(response.statusCode).to.equal(404);
         });
         it('does not send a request', function() {
-            expect(externalRequest).to.be.null;
+            expect(externalRequests).to.be.empty;
         });
     });
     context('when the received request does not contain a X-Github-Event header', function() {
@@ -174,7 +175,7 @@ describe('server', function() {
             expect(response.statusCode).to.equal(400);
         });
         it('does not send a request', function() {
-            expect(externalRequest).to.be.null;
+            expect(externalRequests).to.be.empty;
         });
     });
     context('when the received request is for the wrong event type', function() {
@@ -186,7 +187,7 @@ describe('server', function() {
             expect(response.statusCode).to.equal(400);
         });
         it('does not send a request', function() {
-            expect(externalRequest).to.be.null;
+            expect(externalRequests).to.be.empty;
         });
     });
     context('when the received request is for the wrong action type', function() {
@@ -198,7 +199,7 @@ describe('server', function() {
             expect(response.statusCode).to.equal(200);
         });
         it('does not send a request', function() {
-            expect(externalRequest).to.be.null;
+            expect(externalRequests).to.be.empty;
         });
     });
     context('when the received request does not a valid signature', function() {
@@ -214,7 +215,7 @@ describe('server', function() {
             expect(response.statusCode).to.equal(400);
         });
         it('does not send a request', function() {
-            expect(externalRequest).to.be.null;
+            expect(externalRequests).to.be.empty;
         });
     });
 });
