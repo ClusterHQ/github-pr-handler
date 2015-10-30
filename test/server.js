@@ -14,11 +14,11 @@ describe('server', function() {
     var externalServer = http.Server();
     var externalServerPort = 8082;
     var externalServerURL = 'http://localhost:' + externalServerPort;
-    var externalServerResponseCode;
+    var externalServerResponseCodes = [];
     var externalRequests = [];
     externalServer.on('request', function(req, res) {
         externalRequests.push(req);
-        res.statusCode = externalServerResponseCode;
+        res.statusCode = externalServerResponseCodes.shift();
         res.end();
     });
 
@@ -50,7 +50,7 @@ describe('server', function() {
     }
 
     beforeEach(function() {
-        externalServerResponseCode = 200;
+        externalServerResponseCodes = [ 200, 200 ];
         externalRequests = [];
         response = null;
         body = {
@@ -109,6 +109,15 @@ describe('server', function() {
                 expect(externalRequests).to.have.deep
                     .property('[0].headers.authorization', 'Basic dXNlcjphcGlfdG9rZW4=');
             });
+            context('when the request fails', function() {
+                it('responds with a 500', function() {
+                    externalServerResponseCodes = [ 500, 200 ];
+                    return doRequest()
+                        .then(function() {
+                            expect(response.statusCode).to.equal(500);
+                        });
+                });
+            });
         });
         describe("the build request", function() {
             it('includes the branch name for the pull-request in the URL', function() {
@@ -124,13 +133,13 @@ describe('server', function() {
             });
             context('when the request fails', function() {
                 it('responds with a 500', function() {
-                    externalServerResponseCode = 500;
+                    externalServerResponseCodes = [ 200, 500 ];
                     return doRequest()
                         .then(function() {
                             expect(response.statusCode).to.equal(500);
                         });
                 });
-            })
+            });
         });
     });
 
