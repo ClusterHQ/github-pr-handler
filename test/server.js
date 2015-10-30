@@ -94,12 +94,12 @@ describe('server', function() {
         it("responds with a 200", function() {
             expect(response.statusCode).to.equal(200);
         });
-        it("sends a request", function() {
-            expect(externalRequests).to.have.length(1);
+        it("sends two requests", function() {
+            expect(externalRequests).to.have.length(2);
         });
-        describe("the request", function() {
+        describe('the setup request', function() {
             it('includes the branch name for the pull-request in the URL', function() {
-                var url = "/job/Org-Repo/job/branch/job/triggerJobName/build";
+                var url = "/job/setup_Org-Repo/build?RECONFIGURE_BRANCH=branch";
                 expect(externalRequests).to.have.deep.property('[0].url', url);
             });
             it('sends a POST request', function() {
@@ -108,6 +108,19 @@ describe('server', function() {
             it('includes the correct authentication header', function() {
                 expect(externalRequests).to.have.deep
                     .property('[0].headers.authorization', 'Basic dXNlcjphcGlfdG9rZW4=');
+            });
+        });
+        describe("the build request", function() {
+            it('includes the branch name for the pull-request in the URL', function() {
+                var url = "/job/Org-Repo/job/branch/job/triggerJobName/build";
+                expect(externalRequests).to.have.deep.property('[1].url', url);
+            });
+            it('sends a POST request', function() {
+                expect(externalRequests).to.have.deep.property('[1].method', 'POST');
+            });
+            it('includes the correct authentication header', function() {
+                expect(externalRequests).to.have.deep
+                    .property('[1].headers.authorization', 'Basic dXNlcjphcGlfdG9rZW4=');
             });
             context('when the request fails', function() {
                 it('responds with a 500', function() {
