@@ -109,9 +109,12 @@ describe('server', function() {
                 expect(externalRequest.headers.authorization).to.equal('Basic dXNlcjphcGlfdG9rZW4=');
             });
             context('when the request fails', function() {
-                externalServerResponseCode = 500;
                 it('responds with a 500', function() {
-
+                    externalServerResponseCode = 500;
+                    return doRequest()
+                        .then(function() {
+                            expect(response.statusCode).to.equal(500);
+                        });
                 });
             })
         });
