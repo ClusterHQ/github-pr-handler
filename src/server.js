@@ -83,26 +83,55 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                 return;
             }
 
-            // Extract the necessary data from the request body and construct the correct
-            // Jenkins job URL to post a build request to.
-            var request = {
-                uri: jenkinsServer +
-                    '/job/' + body.repository.owner.login + '-' + body.repository.name +
-                    '/job/' + body.pull_request.head.ref +
-                    '/job/' + triggerJobName +
-                    '/build',
-                method: 'POST',
-                headers: {
-                    Authorization: calculateBasicAuthValue(jenkinsUsername, jenkinsApiToken)
-                }
+            var owner = body.repository.owner.login;
+            var repo = body.repository.name;
+            var branch = body.pull_request.head.ref;
+            var auth_header = calculateBasicAuthValue(jenkinsUsername, jenkinsApiToken);
+
+            // Trigger the setup job
+            // Wait for the branch to appear in the "lastSuccessfulBuild" list
+            // Also check that it doesn't appear in the failed list.
+
+            var setup_jobs = function() {
+                var request = {
+                    uri: jenkinsServer +
+                        '/job/setup_' + owner + '-' + repo +
+                        '/build?RECONFIGURE_BRANCH=' + branch,
+                    method: 'POST',
+                    headers: {
+                        Authorization: auth_header
+                    }
+                };
+
+                return rp(request);
             };
-            rp(request)
+
+            var build_request = function() {
+                var request = {
+                    uri: jenkinsServer +
+                        '/job/' + owner + '-' + repo +
+                        '/job/' + branch +
+                        '/job/' + triggerJobName +
+                        '/build',
+                    method: 'POST',
+                    headers: {
+                        Authorization: auth_header
+                    }
+                };
+                return rp(request);
+            };
+
+            var handle_error = function(err) {
+                console.log('Could not send request to Jenkins URL: ' + err.options.uri);
+            };
+
+            setup_jobs()
+                .then(build_request)
                 .then(function() {
-                    console.log('Sent POST request to Jenkins');
                     res.sendStatus(200);
                 })
-                .catch(function() {
-                    console.log("Could not send POST request to Jenkins URL: " + request.uri);
+                .catch(function(err) {
+                    handle_error(err);
                     res.sendStatus(500);
                 });
         } catch (e) {
