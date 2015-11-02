@@ -18,7 +18,7 @@ describe('server', function() {
     var externalRequests = [];
     externalServer.on('request', function(req, res) {
         externalRequests.push(req);
-        res.statusCode = externalServerResponseCodes.shift();
+        res.statusCode = externalServerResponseCodes.shift() || 200;
         res.end();
     });
 
@@ -50,7 +50,6 @@ describe('server', function() {
     }
 
     beforeEach(function() {
-        externalServerResponseCodes = [ 200, 200 ];
         externalRequests = [];
         response = null;
         body = {
@@ -111,7 +110,7 @@ describe('server', function() {
             });
             context('when the request fails', function() {
                 it('responds with a 500', function() {
-                    externalServerResponseCodes = [ 500, 200 ];
+                    externalServerResponseCodes = [ 500 ];
                     return doRequest()
                         .then(function() {
                             expect(response.statusCode).to.equal(500);
