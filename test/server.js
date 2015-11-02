@@ -98,7 +98,7 @@ describe('server', function() {
         });
         describe('the setup request', function() {
             it('includes the branch name for the pull-request in the URL', function() {
-                var url = "/job/setup_Org-Repo/build?RECONFIGURE_BRANCH=branch";
+                var url = "/job/setup_Org-Repo/buildWithParameters?RECONFIGURE_BRANCH=branch";
                 expect(externalRequests).to.have.deep.property('[0].url', url);
             });
             it('sends a POST request', function() {
