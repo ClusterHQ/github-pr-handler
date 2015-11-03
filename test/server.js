@@ -333,6 +333,24 @@ describe('server', function() {
         });
     });
 
+    context('when the setup job has not been queued yet', function () {
+        beforeEach(function() {
+            externalServerResponses = createExternalResponses();
+            // add an external server response that does not have
+            // the details of the queued build
+            externalServerResponses.splice(1, 0, {
+                statusCode: 200,
+                headers: {},
+                body : {}
+            });
+            return doRequest();
+        });
+        it('repeats the request to check for the queued job', function() {
+            expect(externalRequests).to.have.length(5);
+            // check that the URL is requested twice
+            expect(externalRequests[1].url).to.equal(externalRequests[2].url);
+        });
+    });
     context('when the setup job status is null or incomplete', function () {
         beforeEach(function() {
             externalServerResponses = createExternalResponses();
