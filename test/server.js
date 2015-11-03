@@ -51,6 +51,9 @@ describe('server', function() {
             });
     }
 
+    var setupJobQueueURL = '/job/in/queue';
+    var setupJobBuildURL = '/job/build/id';
+
     function createExternalResponses() {
         var responses = [];
         responses.push(
@@ -58,7 +61,7 @@ describe('server', function() {
             {
                 statusCode: 200,
                 headers: {
-                    location: externalServerURL + '/job/in/queue'
+                    location: externalServerURL + setupJobQueueURL
                 },
                 body: {}
             },
@@ -68,7 +71,7 @@ describe('server', function() {
                 headers: {},
                 body: {
                     executable: {
-                        url: externalServerURL + '/job/build/id'
+                        url: externalServerURL + setupJobBuildURL
                     }
                 }
             },
@@ -163,7 +166,7 @@ describe('server', function() {
         });
         describe('the build queue request', function() {
             it('uses the URL included in the response from the setup request', function() {
-                var url = externalServerResponses[0].headers.location + '/api/json';
+                var url = setupJobQueueURL + '/api/json';
                 expect(externalRequests).to.have.deep.property('[1].url', url);
             });
             it('sends a GET request', function() {
@@ -186,7 +189,7 @@ describe('server', function() {
         });
         describe('the setup job status request', function() {
             it('uses the URL included in the response from the build queue request', function() {
-                var url = externalServerResponses[1].body.executable.url;
+                var url = setupJobBuildURL + '/api/json';
                 expect(externalRequests).to.have.deep.property('[2].url', url);
             });
             it('sends a GET request', function() {
@@ -332,30 +335,27 @@ describe('server', function() {
 
     context('when the setup job status is null or incomplete', function () {
         beforeEach(function() {
-            // set up an array of responses to send
             externalServerResponses = createExternalResponses();
+            // add an external server response that states the build is incomplete
             externalServerResponses.splice(2, 0, {
                 statusCode: 200,
-                    headers: {},
+                headers: {},
                 body: {
                     result: null
                 }
             });
-            // insert new third response
             return doRequest();
         });
-        it('repeats the request', function() {
-            // keep a record of the requests that are made to each url
-            // check that the multiple requests are made to this particular URL
+        it('repeats the request to check the job status', function() {
             expect(externalRequests).to.have.length(5);
+            // check that the URL is requested twice
+            expect(externalRequests[2].url).to.equal(externalRequests[3].url);
         });
     });
     context('when the setup job status is failed', function () {
         beforeEach(function() {
-            // set up an array of responses to send
             externalServerResponses = createExternalResponses();
             externalServerResponses[2].body.result = "FAILURE";
-            // modify
             return doRequest();
         });
         it('responds with 500', function() {
