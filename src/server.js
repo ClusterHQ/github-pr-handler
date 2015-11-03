@@ -29,6 +29,32 @@ function calculateBasicAuthValue(username, password) {
     return "Basic " + (new Buffer(username + ":" + password).toString("base64"));
 }
 
+function poll(fn, interval, limit) {
+    function delay(interval) {
+        return new Promise(function(fulfill) {
+            setTimeout(fulfill, interval);
+        });
+    }
+
+    function timeout(promise, time) {
+        return Promise.race([promise, delay(time).then(function () {
+            throw new Error('Operation timed out');
+        })]);
+    }
+
+    function pollRecursive() {
+        return fn().then(function(result) {
+            if (result) {
+                return Promise.resolve(true);
+            } else {
+                return delay(interval).then(pollRecursive);
+            }
+        });
+    }
+
+    return timeout(pollRecursive(), limit);
+}
+
 /**
  * Start the Github PR handler server.
  * @function
@@ -88,25 +114,121 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
             var branch = body.pull_request.head.ref;
             var auth_header = calculateBasicAuthValue(jenkinsUsername, jenkinsApiToken);
 
-            // Trigger the setup job
-            // Wait for the branch to appear in the "lastSuccessfulBuild" list
-            // Also check that it doesn't appear in the failed list.
+            var handleError = function(err) {
+                if (err.hasOwnProperty('options')) {
+                    console.log('Could not send request to Jenkins URL: ' + err.options.uri);
+                } else {
+                    console.log(err);
+                }
+            };
 
-            var setup_jobs = function() {
-                var request = {
+            // Trigger the setup job and wait for it to complete.
+            var setupJobs = function() {
+                var setupJobRequest = {
                     uri: jenkinsServer +
                         '/job/setup_' + owner + '-' + repo +
-                        '/build?RECONFIGURE_BRANCH=' + branch,
+                        '/buildWithParameters?RECONFIGURE_BRANCH=' + branch,
                     method: 'POST',
                     headers: {
                         Authorization: auth_header
-                    }
+                    },
+                    resolveWithFullResponse: true
                 };
 
-                return rp(request);
+                // Trigger the setup job. The response header will include the URL with
+                // details of the build that will be queued.
+                return rp(setupJobRequest)
+                    .then(function(response) {
+                        // Make a request to the URL in the response header.
+                        // When setup job build has been queued, the body of the response
+                        // will contain a URL with details of the build including the status.
+                        var getQueuedSetupJobRequest = {
+                            uri: response.headers.location + '/api/json',
+                            method: 'GET',
+                            headers: {
+                                Authorization: auth_header
+                            }
+                        };
+
+                        var buildUrl;
+                        var checkBuildHasBeenQueued = function() {
+                            // The setup job build has been queued once the executable.url
+                            // property is available in the response.
+                            return rp(getQueuedSetupJobRequest)
+                                .then(function(body) {
+                                    var queuedBuildInfo = JSON.parse(body);
+                                    if (queuedBuildInfo.hasOwnProperty('executable')) {
+                                        buildUrl = queuedBuildInfo.executable.url;
+                                        return true;
+                                    }
+                                    return false;
+                                });
+                        };
+
+                        function waitForBuildToBeQueued() {
+                            return poll(checkBuildHasBeenQueued, 500, 20000);
+                        }
+
+                        return new Promise(function(resolve, reject) {
+                            // The setup job is not immediately queued.
+                            // Do not resolve until this has been queued.
+                            return waitForBuildToBeQueued()
+                                .then(function () {
+                                    resolve(buildUrl);
+                                })
+                                .catch(function (err) {
+                                    reject(err);
+                                });
+                        });
+                    })
+                    .then(function(url) {
+                        // Check the status of the setup build by making a request to the URL
+                        // with the build details.
+                        // The build status will be one of the following:
+                        // SUCCESS - the build completed successfully. The main build can now take place.
+                        // FAILURE - the build failed. We can't continue with the main build.
+                        // null - the build is incomplete. Wait and query again.
+                        var getSetupJobInfoStatus = {
+                            uri: url + '/api/json',
+                            method: 'GET',
+                            headers: {
+                                Authorization: auth_header
+                            }
+                        };
+
+                        var checkIfSetupSucceeded = function() {
+                            return rp(getSetupJobInfoStatus)
+                                .then(function(body) {
+                                    var setupJobStatus = JSON.parse(body);
+                                    if (setupJobStatus.result === "SUCCESS") {
+                                        return true;
+                                    } else if (setupJobStatus.result === "FAILURE") {
+                                        throw new Error('Build Failed');
+                                    }
+                                    return false;
+                                });
+                        };
+
+                        function waitForSetup() {
+                            return poll(checkIfSetupSucceeded, 500, 50000);
+                        }
+
+                        return new Promise(function(resolve, reject) {
+                            // Wait for setup build to complete then resolve
+                            return waitForSetup()
+                                .then(function () {
+                                    resolve();
+                                })
+                                .catch(function(err) {
+                                    reject(err);
+                                });
+                        });
+                    });
+
             };
 
-            var build_request = function() {
+            // Request to trigger the build of the main multijob
+            var makeBuildRequest = function() {
                 var request = {
                     uri: jenkinsServer +
                         '/job/' + owner + '-' + repo +
@@ -121,17 +243,14 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                 return rp(request);
             };
 
-            var handle_error = function(err) {
-                console.log('Could not send request to Jenkins URL: ' + err.options.uri);
-            };
-
-            setup_jobs()
-                .then(build_request)
+            setupJobs()
+                .then(makeBuildRequest)
                 .then(function() {
+                    console.log("Sent build request to Jenkins");
                     res.sendStatus(200);
                 })
                 .catch(function(err) {
-                    handle_error(err);
+                    handleError(err);
                     res.sendStatus(500);
                 });
         } catch (e) {
