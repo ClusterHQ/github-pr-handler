@@ -45,7 +45,7 @@ function poll(fn, interval, limit) {
     function pollRecursive() {
         return fn().then(function(result) {
             if (result) {
-                return Promise.resolve(true);
+                return true;
             } else {
                 return delay(interval).then(pollRecursive);
             }
@@ -165,21 +165,10 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                                 });
                         };
 
-                        function waitForBuildToBeQueued() {
-                            return poll(checkBuildHasBeenQueued, 500, 20000);
-                        }
-
-                        return new Promise(function(resolve, reject) {
-                            // The setup job is not immediately queued.
-                            // Do not resolve until this has been queued.
-                            return waitForBuildToBeQueued()
-                                .then(function () {
-                                    resolve(buildUrl);
-                                })
-                                .catch(function (err) {
-                                    reject(err);
-                                });
-                        });
+                        return poll(checkBuildHasBeenQueued, 500, 20000)
+                            .then(function() {
+                                return buildUrl;
+                            });
                     })
                     .then(function(url) {
                         // Check the status of the setup build by making a request to the URL
@@ -209,20 +198,7 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                                 });
                         };
 
-                        function waitForSetup() {
-                            return poll(checkIfSetupSucceeded, 500, 50000);
-                        }
-
-                        return new Promise(function(resolve, reject) {
-                            // Wait for setup build to complete then resolve
-                            return waitForSetup()
-                                .then(function () {
-                                    resolve();
-                                })
-                                .catch(function(err) {
-                                    reject(err);
-                                });
-                        });
+                        return poll(checkIfSetupSucceeded, 500, 50000);
                     });
 
             };
