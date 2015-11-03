@@ -26,7 +26,7 @@ function calculateSignature(data, key) {
  * @returns {string} A value to be used within the Authorization HTTP header.
  */
 function calculateBasicAuthValue(username, password) {
-    return "Basic " + (new Buffer(username + ":" + password).toString("base64"));
+    return 'Basic ' + (new Buffer(username + ':' + password).toString('base64'));
 }
 
 function poll(fn, interval, limit) {
@@ -189,9 +189,9 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                             return rp(getSetupJobInfoStatus)
                                 .then(function(body) {
                                     var setupJobStatus = JSON.parse(body);
-                                    if (setupJobStatus.result === "SUCCESS") {
+                                    if (setupJobStatus.result === 'SUCCESS') {
                                         return true;
-                                    } else if (setupJobStatus.result === "FAILURE") {
+                                    } else if (setupJobStatus.result === 'FAILURE') {
                                         throw new Error('Build Failed');
                                     }
                                     return false;
@@ -222,7 +222,7 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
             setupJobs()
                 .then(makeBuildRequest)
                 .then(function() {
-                    console.log("Sent build request to Jenkins");
+                    console.log('Sent build request to Jenkins');
                     res.sendStatus(200);
                 })
                 .catch(function(err) {
@@ -230,7 +230,7 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                     res.sendStatus(500);
                 });
         } catch (e) {
-            console.log("Internal server error: " + e);
+            console.log('Internal server error: ' + e);
             console.log(e.stack);
             res.sendStatus(500);
         }

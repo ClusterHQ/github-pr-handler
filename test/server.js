@@ -135,15 +135,15 @@ describe('server', function() {
 
     context('when a valid request is received', function() {
         beforeEach(doRequest);
-        it("responds with a 200", function() {
+        it('responds with a 200', function() {
             expect(response.statusCode).to.equal(200);
         });
-        it("sends four requests", function() {
+        it('sends four requests', function() {
             expect(externalRequests).to.have.length(4);
         });
         describe('the setup request', function() {
             it('includes the branch name for the pull-request in the URL', function() {
-                var url = "/job/setup_Org-Repo/buildWithParameters?RECONFIGURE_BRANCH=branch";
+                var url = '/job/setup_Org-Repo/buildWithParameters?RECONFIGURE_BRANCH=branch';
                 expect(externalRequests).to.have.deep.property('[0].url', url);
             });
             it('sends a POST request', function() {
@@ -210,9 +210,9 @@ describe('server', function() {
                 });
             });
         });
-        describe("the build request", function() {
+        describe('the build request', function() {
             it('includes the branch name for the pull-request in the URL', function() {
-                var url = "/job/Org-Repo/job/branch/job/triggerJobName/build";
+                var url = '/job/Org-Repo/job/branch/job/triggerJobName/build';
                 expect(externalRequests).to.have.deep.property('[3].url', url);
             });
             it('sends a POST request', function() {
@@ -236,21 +236,21 @@ describe('server', function() {
     });
 
     it('considers "opened" a valid action', function () {
-        body.action = "opened";
+        body.action = 'opened';
         return doRequest()
             .then(function() {
                 expect(response.statusCode).to.equal(200);
             });
     });
     it('considers "reopened" a valid action', function () {
-        body.action = "reopened";
+        body.action = 'reopened';
         return doRequest()
             .then(function() {
                 expect(response.statusCode).to.equal(200);
             });
     });
     it('considers "synchronize" a valid action', function () {
-        body.action = "synchronize";
+        body.action = 'synchronize';
         return doRequest()
             .then(function() {
                 expect(response.statusCode).to.equal(200);
@@ -282,7 +282,7 @@ describe('server', function() {
     });
     context('when the received request does not contain a X-Github-Event header', function() {
         beforeEach(function() {
-            delete request.headers["X-Github-Event"];
+            delete request.headers['X-Github-Event'];
             return doRequest();
         });
         it('responds with a 400', function() {
@@ -294,7 +294,7 @@ describe('server', function() {
     });
     context('when the received request is for the wrong event type', function() {
         beforeEach(function() {
-            request.headers["X-Github-Event"] = 'issue_comment';
+            request.headers['X-Github-Event'] = 'issue_comment';
             return doRequest();
         });
         it('responds with a 400', function() {
@@ -373,7 +373,7 @@ describe('server', function() {
     context('when the setup job status is failed', function () {
         beforeEach(function() {
             externalServerResponses = createExternalResponses();
-            externalServerResponses[2].body.result = "FAILURE";
+            externalServerResponses[2].body.result = 'FAILURE';
             return doRequest();
         });
         it('responds with 500', function() {
