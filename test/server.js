@@ -14,11 +14,13 @@ describe('server', function() {
     var externalServer = http.Server();
     var externalServerPort = 8082;
     var externalServerURL = 'http://localhost:' + externalServerPort;
-    var externalServerResponseCodes = [];
+    var externalServerResponses = [];
     var externalRequests = [];
     externalServer.on('request', function(req, res) {
         externalRequests.push(req);
-        res.statusCode = externalServerResponseCodes.shift() || 200;
+        var externalResponse = externalServerResponses.shift();
+        res.writeHead(externalResponse.statusCode, externalResponse.headers);
+        res.write(JSON.stringify(externalResponse.body));
         res.end();
     });
 
@@ -49,8 +51,48 @@ describe('server', function() {
             });
     }
 
+    function createExternalResponses() {
+        var responses = [];
+        responses.push(
+            // Response from triggering the setup job
+            {
+                statusCode: 200,
+                headers: {
+                    location: externalServerURL + '/job/in/queue'
+                },
+                body: {}
+            },
+            // Response from inspecting the setup job in the queue
+            {
+                statusCode: 200,
+                headers: {},
+                body: {
+                    executable: {
+                        url: externalServerURL + '/job/build/id'
+                    }
+                }
+            },
+            // Response from checking the setup job status
+            {
+                statusCode: 200,
+                headers: {},
+                body: {
+                    result: 'SUCCESS'
+                }
+            },
+            // Response from triggering the main build job
+            {
+                statusCode: 200,
+                headers: {},
+                body: {}
+            }
+        );
+        return responses;
+    }
+
     beforeEach(function() {
         externalRequests = [];
+        externalServerResponses = createExternalResponses();
         response = null;
         body = {
             action: 'opened',
@@ -93,8 +135,8 @@ describe('server', function() {
         it("responds with a 200", function() {
             expect(response.statusCode).to.equal(200);
         });
-        it("sends two requests", function() {
-            expect(externalRequests).to.have.length(2);
+        it("sends four requests", function() {
+            expect(externalRequests).to.have.length(4);
         });
         describe('the setup request', function() {
             it('includes the branch name for the pull-request in the URL', function() {
@@ -110,7 +152,54 @@ describe('server', function() {
             });
             context('when the request fails', function() {
                 it('responds with a 500', function() {
-                    externalServerResponseCodes = [ 500 ];
+                    externalServerResponses = createExternalResponses();
+                    externalServerResponses[0].statusCode = 500;
+                    return doRequest()
+                        .then(function() {
+                            expect(response.statusCode).to.equal(500);
+                        });
+                });
+            });
+        });
+        describe('the build queue request', function() {
+            it('uses the URL included in the response from the setup request', function() {
+                var url = externalServerResponses[0].headers.location + '/api/json';
+                expect(externalRequests).to.have.deep.property('[1].url', url);
+            });
+            it('sends a GET request', function() {
+                expect(externalRequests).to.have.deep.property('[1].method', 'GET');
+            });
+            it('includes the correct authentication header', function() {
+                expect(externalRequests).to.have.deep
+                    .property('[1].headers.authorization', 'Basic dXNlcjphcGlfdG9rZW4=');
+            });
+            context('when the request fails', function() {
+                it('responds with a 500', function() {
+                    externalServerResponses = createExternalResponses();
+                    externalServerResponses[1].statusCode = 500;
+                    return doRequest()
+                        .then(function() {
+                            expect(response.statusCode).to.equal(500);
+                        });
+                });
+            });
+        });
+        describe('the setup job status request', function() {
+            it('uses the URL included in the response from the build queue request', function() {
+                var url = externalServerResponses[1].body.executable.url;
+                expect(externalRequests).to.have.deep.property('[2].url', url);
+            });
+            it('sends a GET request', function() {
+                expect(externalRequests).to.have.deep.property('[2].method', 'GET');
+            });
+            it('includes the correct authentication header', function() {
+                expect(externalRequests).to.have.deep
+                    .property('[2].headers.authorization', 'Basic dXNlcjphcGlfdG9rZW4=');
+            });
+            context('when the request fails', function() {
+                it('responds with a 500', function() {
+                    externalServerResponses = createExternalResponses();
+                    externalServerResponses[2].statusCode = 500;
                     return doRequest()
                         .then(function() {
                             expect(response.statusCode).to.equal(500);
@@ -121,18 +210,19 @@ describe('server', function() {
         describe("the build request", function() {
             it('includes the branch name for the pull-request in the URL', function() {
                 var url = "/job/Org-Repo/job/branch/job/triggerJobName/build";
-                expect(externalRequests).to.have.deep.property('[1].url', url);
+                expect(externalRequests).to.have.deep.property('[3].url', url);
             });
             it('sends a POST request', function() {
-                expect(externalRequests).to.have.deep.property('[1].method', 'POST');
+                expect(externalRequests).to.have.deep.property('[3].method', 'POST');
             });
             it('includes the correct authentication header', function() {
                 expect(externalRequests).to.have.deep
-                    .property('[1].headers.authorization', 'Basic dXNlcjphcGlfdG9rZW4=');
+                    .property('[3].headers.authorization', 'Basic dXNlcjphcGlfdG9rZW4=');
             });
             context('when the request fails', function() {
                 it('responds with a 500', function() {
-                    externalServerResponseCodes = [ 200, 500 ];
+                    externalServerResponses = createExternalResponses();
+                    externalServerResponses[3].statusCode = 500;
                     return doRequest()
                         .then(function() {
                             expect(response.statusCode).to.equal(500);
@@ -237,6 +327,39 @@ describe('server', function() {
         });
         it('does not send a request', function() {
             expect(externalRequests).to.be.empty;
+        });
+    });
+
+    context('when the setup job status is null or incomplete', function () {
+        beforeEach(function() {
+            // set up an array of responses to send
+            externalServerResponses = createExternalResponses();
+            externalServerResponses.splice(2, 0, {
+                statusCode: 200,
+                    headers: {},
+                body: {
+                    result: null
+                }
+            });
+            // insert new third response
+            return doRequest();
+        });
+        it('repeats the request', function() {
+            // keep a record of the requests that are made to each url
+            // check that the multiple requests are made to this particular URL
+            expect(externalRequests).to.have.length(5);
+        });
+    });
+    context('when the setup job status is failed', function () {
+        beforeEach(function() {
+            // set up an array of responses to send
+            externalServerResponses = createExternalResponses();
+            externalServerResponses[2].body.result = "FAILURE";
+            // modify
+            return doRequest();
+        });
+        it('responds with 500', function() {
+            expect(response.statusCode).to.equal(500);
         });
     });
 });
