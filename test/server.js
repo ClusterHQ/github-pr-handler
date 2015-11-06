@@ -199,6 +199,19 @@ describe('server', function() {
                 expect(externalRequests).to.have.deep
                     .property('[2].headers.authorization', 'Basic dXNlcjphcGlfdG9rZW4=');
             });
+            context('when the respsonse URL host does not match the external server host', function() {
+                it('replaces the host in the request with the external server host', function () {
+                    var host = 'http://127.0.0.1:8082';
+                    externalRequests = [];
+                    externalServerResponses = createExternalResponses();
+                    externalServerResponses[1].body.executable.url = host + setupJobBuildURL;
+                    return doRequest()
+                        .then(function() {
+                            var expectedHost = externalServerURL.replace('http://', '');
+                            expect(externalRequests).to.have.deep.property('[2].headers.host', expectedHost);
+                        });
+                });
+            });
             context('when the request fails', function() {
                 it('responds with a 500', function() {
                     externalServerResponses = createExternalResponses();

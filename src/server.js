@@ -177,6 +177,10 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                         // SUCCESS - the build completed successfully. The main build can now take place.
                         // FAILURE - the build failed. We can't continue with the main build.
                         // null - the build is incomplete. Wait and query again.
+
+                        // The host in the URL in the response may not be accessible so replace it
+                        // with the provided server URL.
+                        url = url.replace(new RegExp('http://[^/]+'), jenkinsServer);
                         var getSetupJobInfoStatus = {
                             uri: url + '/api/json',
                             method: 'GET',
