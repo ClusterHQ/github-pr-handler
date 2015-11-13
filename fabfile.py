@@ -1,7 +1,8 @@
+# vim: ai ts=4 sts=4 et sw=4 ft=python fdm=indent et foldlevel=0
 import os
 import yaml
 
-from fabric.api import sudo, task, env
+from fabric.api import sudo, task, env, execute
 from fabric.context_managers import cd, settings, hide
 from bookshelf.api_v1 import (apt_install,
                               create_docker_group,
@@ -96,6 +97,7 @@ class GithubPRHandlerCookbook():
             self.build_docker_image(os.path.curdir, repo)
             secrets = self.secrets()['env']['default']['github_pr_handler']
             cmd = ('docker run '
+                   '-d '
                    '-p {port}:{port} '
                    '-e GITHUB_SECRET={github_secret} '
                    '-e JENKINS_USERNAME={jenkins_username} '
@@ -255,8 +257,8 @@ def up():
 
 @task
 def it():
-    up()
-    bootstrap()
+    execute(up)
+    execute(bootstrap)
 
 @task
 def bootstrap():
