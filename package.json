@@ -4,7 +4,7 @@
   "description": "Receive Github PRs and trigger the appropriate jobs on Jenkins",
   "main": "index.js",
   "scripts": {
-    "test": "eslint . && mocha"
+    "test": "export NODE_ENV=test && eslint . && mocha && unset NODE_ENV"
   },
   "author": "ClusterHQ",
   "devDependencies": {
