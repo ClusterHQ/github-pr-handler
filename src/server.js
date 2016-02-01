@@ -5,6 +5,9 @@ var crypto = require('crypto');
 
 var allowedActions = ['opened', 'reopened', 'synchronize'];
 
+//add timestamps in front of log messages
+require('console-stamp')(console, '[HH:MM:ss.l]');
+
 /**
  * Calculate the HMAC hex digest of the given data using the secret.
  * @function
@@ -38,6 +41,7 @@ function poll(fn, interval, limit) {
 
     function timeout(promise, time) {
         return Promise.race([promise, delay(time).then(function () {
+            console.log('Operation timed out : interval : %s limit : %limit', interval, limit)
             throw new Error('Operation timed out');
         })]);
     }
@@ -114,6 +118,8 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
             var branch = body.pull_request.head.ref;
             var auth_header = calculateBasicAuthValue(jenkinsUsername, jenkinsApiToken);
 
+            console.log('Received : %s %s %s %s', owner, repo, branch, auth_header)
+
             var handleError = function(err) {
                 if (err.hasOwnProperty('options')) {
                     console.log('Could not send request to Jenkins URL: ' + err.options.uri);
@@ -135,6 +141,8 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                     resolveWithFullResponse: true
                 };
 
+                console.log('setupJobRequest : %j', setupJobRequest)
+
                 // Trigger the setup job. The response header will include the URL with
                 // details of the build that will be queued.
                 return rp(setupJobRequest)
@@ -150,6 +158,8 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                             }
                         };
 
+                        console.log('getQueuedSetupJobRequest : %j', getQueuedSetupJobRequest)
+
                         var buildUrl;
                         var checkBuildHasBeenQueued = function() {
                             // The setup job build has been queued once the executable.url
@@ -159,8 +169,10 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                                     var queuedBuildInfo = JSON.parse(body);
                                     if (queuedBuildInfo.hasOwnProperty('executable')) {
                                         buildUrl = queuedBuildInfo.executable.url;
+                                        console.log('Build queued : %s', buildUrl)
                                         return true;
                                     }
+                                    console.log('Build not queued')
                                     return false;
                                 });
                         };
@@ -189,22 +201,26 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                             }
                         };
 
+                        console.log('getSetupJobInfoStatus : %j', getSetupJobInfoStatus)
+
                         var checkIfSetupSucceeded = function() {
                             return rp(getSetupJobInfoStatus)
                                 .then(function(body) {
                                     var setupJobStatus = JSON.parse(body);
                                     if (setupJobStatus.result === 'SUCCESS') {
+                                        console.log('Setup job succeded');
                                         return true;
                                     } else if (setupJobStatus.result === 'FAILURE') {
+                                        console.log('Setup job failed');
                                         throw new Error('Build Failed');
                                     }
+                                    console.log('Setup job unexpected outcome : %j', setupJobStatus)
                                     return false;
                                 });
                         };
 
                         return poll(checkIfSetupSucceeded, 500, 50000);
                     });
-
             };
 
             // Request to trigger the build of the main multijob
@@ -226,10 +242,11 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
             setupJobs()
                 .then(makeBuildRequest)
                 .then(function() {
-                    console.log('Sent build request to Jenkins');
+                    console.log('Finished successfully');
                     res.sendStatus(200);
                 })
                 .catch(function(err) {
+                    console.log('Finished with error');
                     handleError(err);
                     res.sendStatus(500);
                 });
