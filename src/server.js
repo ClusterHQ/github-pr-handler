@@ -5,6 +5,18 @@ var crypto = require('crypto');
 
 var allowedActions = ['opened', 'reopened', 'synchronize'];
 
+//add timestamps in front of log messages
+require('console-stamp')(console, '[HH:MM:ss.l]');
+
+//helper method to log runtime messages
+//initially logs to console
+function runtimeLog(str) {
+    if (process.env.NODE_ENV !== 'test') {
+        console.log(str);
+    }
+}
+
+
 /**
  * Calculate the HMAC hex digest of the given data using the secret.
  * @function
@@ -38,6 +50,7 @@ function poll(fn, interval, limit) {
 
     function timeout(promise, time) {
         return Promise.race([promise, delay(time).then(function () {
+            runtimeLog('Operation timed out : interval : %s limit : %limit', interval, limit)
             throw new Error('Operation timed out');
         })]);
     }
@@ -114,11 +127,13 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
             var branch = body.pull_request.head.ref;
             var auth_header = calculateBasicAuthValue(jenkinsUsername, jenkinsApiToken);
 
+            runtimeLog('Received : %s %s %s %s', owner, repo, branch, auth_header)
+
             var handleError = function(err) {
                 if (err.hasOwnProperty('options')) {
-                    console.log('Could not send request to Jenkins URL: ' + err.options.uri);
+                    runtimeLog('Could not send request to Jenkins URL: ' + err.options.uri);
                 } else {
-                    console.log(err);
+                    runtimeLog(err);
                 }
             };
 
@@ -135,6 +150,8 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                     resolveWithFullResponse: true
                 };
 
+                runtimeLog('setupJobRequest : %j', setupJobRequest)
+
                 // Trigger the setup job. The response header will include the URL with
                 // details of the build that will be queued.
                 return rp(setupJobRequest)
@@ -150,6 +167,8 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                             }
                         };
 
+                        runtimeLog('getQueuedSetupJobRequest : %j', getQueuedSetupJobRequest)
+
                         var buildUrl;
                         var checkBuildHasBeenQueued = function() {
                             // The setup job build has been queued once the executable.url
@@ -159,8 +178,10 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                                     var queuedBuildInfo = JSON.parse(body);
                                     if (queuedBuildInfo.hasOwnProperty('executable')) {
                                         buildUrl = queuedBuildInfo.executable.url;
+                                        runtimeLog('Build queued : %s', buildUrl)
                                         return true;
                                     }
+                                    runtimeLog('Build not queued')
                                     return false;
                                 });
                         };
@@ -189,22 +210,26 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                             }
                         };
 
+                        runtimeLog('getSetupJobInfoStatus : %j', getSetupJobInfoStatus)
+
                         var checkIfSetupSucceeded = function() {
                             return rp(getSetupJobInfoStatus)
                                 .then(function(body) {
                                     var setupJobStatus = JSON.parse(body);
                                     if (setupJobStatus.result === 'SUCCESS') {
+                                        runtimeLog('Setup job succeded');
                                         return true;
                                     } else if (setupJobStatus.result === 'FAILURE') {
+                                        runtimeLog('Setup job failed');
                                         throw new Error('Build Failed');
                                     }
+                                    runtimeLog('Setup job unexpected outcome : %j', setupJobStatus)
                                     return false;
                                 });
                         };
 
                         return poll(checkIfSetupSucceeded, 500, 50000);
                     });
-
             };
 
             // Request to trigger the build of the main multijob
@@ -226,10 +251,11 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
             setupJobs()
                 .then(makeBuildRequest)
                 .then(function() {
-                    console.log('Sent build request to Jenkins');
+                    runtimeLog('Finished successfully');
                     res.sendStatus(200);
                 })
                 .catch(function(err) {
+                    runtimeLog('Finished with error');
                     handleError(err);
                     res.sendStatus(500);
                 });
