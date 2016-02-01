@@ -8,6 +8,15 @@ var allowedActions = ['opened', 'reopened', 'synchronize'];
 //add timestamps in front of log messages
 require('console-stamp')(console, '[HH:MM:ss.l]');
 
+//helper method to log runtime messages
+//initially logs to console
+function runtimeLog(str) {
+    if (process.env.NODE_ENV !== 'test') {
+        console.log(str);
+    }
+}
+
+
 /**
  * Calculate the HMAC hex digest of the given data using the secret.
  * @function
@@ -41,7 +50,7 @@ function poll(fn, interval, limit) {
 
     function timeout(promise, time) {
         return Promise.race([promise, delay(time).then(function () {
-            console.log('Operation timed out : interval : %s limit : %limit', interval, limit)
+            runtimeLog('Operation timed out : interval : %s limit : %limit', interval, limit)
             throw new Error('Operation timed out');
         })]);
     }
@@ -118,13 +127,13 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
             var branch = body.pull_request.head.ref;
             var auth_header = calculateBasicAuthValue(jenkinsUsername, jenkinsApiToken);
 
-            console.log('Received : %s %s %s %s', owner, repo, branch, auth_header)
+            runtimeLog('Received : %s %s %s %s', owner, repo, branch, auth_header)
 
             var handleError = function(err) {
                 if (err.hasOwnProperty('options')) {
-                    console.log('Could not send request to Jenkins URL: ' + err.options.uri);
+                    runtimeLog('Could not send request to Jenkins URL: ' + err.options.uri);
                 } else {
-                    console.log(err);
+                    runtimeLog(err);
                 }
             };
 
@@ -141,7 +150,7 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                     resolveWithFullResponse: true
                 };
 
-                console.log('setupJobRequest : %j', setupJobRequest)
+                runtimeLog('setupJobRequest : %j', setupJobRequest)
 
                 // Trigger the setup job. The response header will include the URL with
                 // details of the build that will be queued.
@@ -158,7 +167,7 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                             }
                         };
 
-                        console.log('getQueuedSetupJobRequest : %j', getQueuedSetupJobRequest)
+                        runtimeLog('getQueuedSetupJobRequest : %j', getQueuedSetupJobRequest)
 
                         var buildUrl;
                         var checkBuildHasBeenQueued = function() {
@@ -169,10 +178,10 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                                     var queuedBuildInfo = JSON.parse(body);
                                     if (queuedBuildInfo.hasOwnProperty('executable')) {
                                         buildUrl = queuedBuildInfo.executable.url;
-                                        console.log('Build queued : %s', buildUrl)
+                                        runtimeLog('Build queued : %s', buildUrl)
                                         return true;
                                     }
-                                    console.log('Build not queued')
+                                    runtimeLog('Build not queued')
                                     return false;
                                 });
                         };
@@ -201,20 +210,20 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                             }
                         };
 
-                        console.log('getSetupJobInfoStatus : %j', getSetupJobInfoStatus)
+                        runtimeLog('getSetupJobInfoStatus : %j', getSetupJobInfoStatus)
 
                         var checkIfSetupSucceeded = function() {
                             return rp(getSetupJobInfoStatus)
                                 .then(function(body) {
                                     var setupJobStatus = JSON.parse(body);
                                     if (setupJobStatus.result === 'SUCCESS') {
-                                        console.log('Setup job succeded');
+                                        runtimeLog('Setup job succeded');
                                         return true;
                                     } else if (setupJobStatus.result === 'FAILURE') {
-                                        console.log('Setup job failed');
+                                        runtimeLog('Setup job failed');
                                         throw new Error('Build Failed');
                                     }
-                                    console.log('Setup job unexpected outcome : %j', setupJobStatus)
+                                    runtimeLog('Setup job unexpected outcome : %j', setupJobStatus)
                                     return false;
                                 });
                         };
@@ -242,11 +251,11 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
             setupJobs()
                 .then(makeBuildRequest)
                 .then(function() {
-                    console.log('Finished successfully');
+                    runtimeLog('Finished successfully');
                     res.sendStatus(200);
                 })
                 .catch(function(err) {
-                    console.log('Finished with error');
+                    runtimeLog('Finished with error');
                     handleError(err);
                     res.sendStatus(500);
                 });
