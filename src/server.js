@@ -10,12 +10,11 @@ require('console-stamp')(console, '[HH:MM:ss.l]');
 
 //helper method to log runtime messages
 //initially logs to console
-function runtimeLog(str) {
+function runtimeLog() {
     if (process.env.NODE_ENV !== 'test') {
-        console.log(str);
+        console.log.apply(console, arguments);
     }
 }
-
 
 /**
  * Calculate the HMAC hex digest of the given data using the secret.
