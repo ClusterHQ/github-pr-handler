@@ -254,14 +254,16 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                     res.sendStatus(200);
                 })
                 .catch(function(err) {
-                    runtimeLog('Finished with error');
+                    runtimeLog('Finished with error : %j', err);
                     handleError(err);
                     res.sendStatus(500);
+                    res.send(JSON.stringify(err))
                 });
         } catch (e) {
-            console.log('Internal server error: ' + e);
+            console.log('Internal server error: %j', e);
             console.log(e.stack);
             res.sendStatus(500);
+            res.send(JSON.stringify(e))
         }
     });
 
