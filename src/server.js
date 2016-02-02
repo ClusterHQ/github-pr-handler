@@ -50,6 +50,7 @@ function poll(fn, interval, limit) {
     function timeout(promise, time) {
         return Promise.race([promise, delay(time).then(function () {
             runtimeLog('Operation timed out : interval : %s limit : %s', interval, limit)
+            // this never gets caught???
             throw new Error('Operation timed out');
         })]);
     }
@@ -227,7 +228,7 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                                 });
                         };
 
-                        return poll(checkIfSetupSucceeded, 500, 50000);
+                        return poll(checkIfSetupSucceeded, 500, 2 * 60 * 1000);
                     });
             };
 
