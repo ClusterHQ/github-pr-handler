@@ -186,7 +186,7 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                                 });
                         };
 
-                        return poll(checkBuildHasBeenQueued, 500, 20000)
+                        return poll(checkBuildHasBeenQueued, 500, 2 * 60 * 1000)
                             .then(function() {
                                 return buildUrl;
                             });
@@ -252,19 +252,20 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                 .then(makeBuildRequest)
                 .then(function() {
                     runtimeLog('Finished successfully');
-                    res.sendStatus(200);
+                    res.status(200).end();
                 })
                 .catch(function(err) {
                     runtimeLog('Finished with error : %j', err);
                     handleError(err);
-                    res.sendStatus(500);
-                    res.send(JSON.stringify(err))
+                      
+                    res.status(500).send(JSON.stringify(err)).end();
                 });
         } catch (e) {
             console.log('Internal server error: %j', e);
             console.log(e.stack);
-            res.sendStatus(500);
-            res.send(JSON.stringify(e))
+            
+            res.status(500).send(e.toString()).end();
+            
         }
     });
 
