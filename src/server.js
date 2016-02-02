@@ -49,7 +49,7 @@ function poll(fn, interval, limit) {
 
     function timeout(promise, time) {
         return Promise.race([promise, delay(time).then(function () {
-            runtimeLog('Operation timed out : interval : %s limit : %limit', interval, limit)
+            runtimeLog('Operation timed out : interval : %s limit : %s', interval, limit)
             throw new Error('Operation timed out');
         })]);
     }
@@ -216,13 +216,13 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                                 .then(function(body) {
                                     var setupJobStatus = JSON.parse(body);
                                     if (setupJobStatus.result === 'SUCCESS') {
-                                        runtimeLog('Setup job succeded');
+                                        runtimeLog('Setupjob : Succeded');
                                         return true;
                                     } else if (setupJobStatus.result === 'FAILURE') {
-                                        runtimeLog('Setup job failed');
+                                        runtimeLog('Setupjob : Failed');
                                         throw new Error('Build Failed');
                                     }
-                                    runtimeLog('Setup job unexpected outcome : %j', setupJobStatus)
+                                    runtimeLog('Setupjob : Unknown : %s', setupJobStatus.result)
                                     return false;
                                 });
                         };
