@@ -48,7 +48,7 @@ class GithubPRHandlerCookbook():
         :param dockerfile: The path of the Dockerfile to build.
         :param image_name: The name to give to the created image.
         """
-
+        log_green('build_docker_image')
         cmd = ('docker build -t {image_name} {dockerfile}').format(
             image_name=image_name,
             dockerfile=dockerfile
@@ -56,15 +56,18 @@ class GithubPRHandlerCookbook():
         sudo(cmd)
 
     def install_docker(self):
+        log_green('install_docker')
+        install_docker()
+        log_green('docker installed')
         create_docker_group()
         self.add_user_to_docker_group()
-        install_docker()
+
 
     def install_packages(self):
         """
         Install required packages.
         """
-
+        log_green('install_packages')
         apt_install(packages=self.required_packages())
         self.install_docker()
 
@@ -88,7 +91,7 @@ class GithubPRHandlerCookbook():
         """
         Start the Github PR Handler service.
         """
-
+        log_green('start_github_handler_instance')
         repo = 'github-pr-handler'
         git_clone('https://github.com/ClusterHQ/github-pr-handler',
                   repo)
@@ -275,7 +278,7 @@ env.disable_known_hosts = True
 env.use_ssh_config = False
 env.eagerly_disconnect = True
 env.connection_attemtps = 5
-env.user = 'root'
+env.user = 'ubuntu'
 
 if is_there_state():
     data = load_state_from_disk()
