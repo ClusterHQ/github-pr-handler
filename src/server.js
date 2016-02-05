@@ -49,7 +49,8 @@ function poll(fn, interval, limit) {
 
     function timeout(promise, time) {
         return Promise.race([promise, delay(time).then(function () {
-            runtimeLog('Operation timed out : interval : %s limit : %limit', interval, limit)
+            runtimeLog('Operation timed out : interval : %s limit : %s', interval, limit)
+            // this never gets caught???
             throw new Error('Operation timed out');
         })]);
     }
@@ -185,7 +186,7 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                                 });
                         };
 
-                        return poll(checkBuildHasBeenQueued, 500, 20000)
+                        return poll(checkBuildHasBeenQueued, 500, 2 * 60 * 1000)
                             .then(function() {
                                 return buildUrl;
                             });
@@ -216,18 +217,18 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                                 .then(function(body) {
                                     var setupJobStatus = JSON.parse(body);
                                     if (setupJobStatus.result === 'SUCCESS') {
-                                        runtimeLog('Setup job succeded');
+                                        runtimeLog('Setupjob : Succeded');
                                         return true;
                                     } else if (setupJobStatus.result === 'FAILURE') {
-                                        runtimeLog('Setup job failed');
+                                        runtimeLog('Setupjob : Failed');
                                         throw new Error('Build Failed');
                                     }
-                                    runtimeLog('Setup job unexpected outcome : %j', setupJobStatus)
+                                    runtimeLog('Setupjob : Unknown : %s', setupJobStatus.result)
                                     return false;
                                 });
                         };
 
-                        return poll(checkIfSetupSucceeded, 500, 50000);
+                        return poll(checkIfSetupSucceeded, 500, 2 * 60 * 1000);
                     });
             };
 
@@ -251,17 +252,20 @@ module.exports = function(port, jenkinsServer, secret, triggerJobName, jenkinsUs
                 .then(makeBuildRequest)
                 .then(function() {
                     runtimeLog('Finished successfully');
-                    res.sendStatus(200);
+                    res.status(200).end();
                 })
                 .catch(function(err) {
-                    runtimeLog('Finished with error');
+                    runtimeLog('Finished with error : %j', err);
                     handleError(err);
-                    res.sendStatus(500);
+                      
+                    res.status(500).send(JSON.stringify(err)).end();
                 });
         } catch (e) {
-            console.log('Internal server error: ' + e);
+            console.log('Internal server error: %j', e);
             console.log(e.stack);
-            res.sendStatus(500);
+            
+            res.status(500).send(e.toString()).end();
+            
         }
     });
 
